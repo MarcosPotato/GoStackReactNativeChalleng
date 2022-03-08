@@ -30,23 +30,74 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      try {
+        const response = await AsyncStorage.getItem("@chart")
+        setProducts(JSON.parse(response || "[]"))
+      } catch (error) {
+        console.log(error)
+      }
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
-
   const increment = useCallback(async id => {
-    // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    try {
+      const increasedProducts = products.map(product => {
+        if(product.id === id){
+          return ({
+            ...product,
+            quantity: product.quantity + 1
+          })
+        } else{
+          return product
+        }
+      })
+      await AsyncStorage.setItem("@chart", JSON.stringify(increasedProducts))
+      setProducts(increasedProducts)
+
+    } catch (error) {
+      console.log(error)
+    }
+  }, [products]);
 
   const decrement = useCallback(async id => {
-    // TODO DECREMENTS A PRODUCT QUANTITY IN THE CART
-  }, []);
+    try {
+      const increasedProducts = products.map(product => {
+        if(product.id === id){
+          return ({
+            ...product,
+            quantity: product.quantity <= 1 ? 1 : product.quantity - 1
+          })
+        } else{
+          return product
+        }
+      })
+
+      await AsyncStorage.setItem("@chart", JSON.stringify(increasedProducts))
+      setProducts(increasedProducts)
+      
+    } catch (error) {
+      console.log(error)
+    }
+  }, [products]);
+
+  const addToCart = useCallback(async product => {
+    const existProduct = products.findIndex(prod => prod.id === product.id)
+
+    if(existProduct >= 0){
+      return increment(product.id)
+    }
+
+    try {
+      const chart = [...products, { ...product, quantity: 1 }]
+      await AsyncStorage.setItem("@chart", JSON.stringify(chart))
+
+      setProducts(chart)
+    } catch (error) {
+      console.log(error)
+    }
+  }, [products, increment]);
 
   const value = React.useMemo(
     () => ({ addToCart, increment, decrement, products }),
